@@ -62,6 +62,7 @@ public class Main
 				String id_link = "http://api-sandbox.pillpack.com/medications/" + med_id;
 				URL id_url = new URL(id_link);
 				HttpURLConnection id_connection = (HttpURLConnection) id_url.openConnection();
+				id_connection.setRequestMethod("GET");
 
 				// Obtain information for this specific medication
 				InputStream id_is = id_connection.getInputStream();
@@ -94,6 +95,7 @@ public class Main
 					String rxcui_link = "http://api-sandbox.pillpack.com/medications?rxcui=" + rxcui;
 					URL rxcui_url = new URL(rxcui_link);
 					HttpURLConnection rxcui_connection = (HttpURLConnection) rxcui_url.openConnection();
+					rxcui_connection.setRequestMethod("GET");
 
 					// Obtain information for all medications with the same rxcui number as the
 					// current one
