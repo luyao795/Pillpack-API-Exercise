@@ -36,7 +36,6 @@ public class Main
 		// A map to store info we have searched in the medication list before to save
 		// time for further search
 		Map<String, Boolean> med_generic_map = new HashMap<String, Boolean>();
-		Map<String, String> med_rxcui_map = new HashMap<String, String>();
 
 		// Handle each object inside JSON array
 		for (int i = 0; i < pre_size; i++)
@@ -69,7 +68,6 @@ public class Main
 
 				// Add a reference to the map
 				med_generic_map.put(med_id, isGeneric);
-				med_rxcui_map.put(med_id, rxcui);
 
 				// Close all connections
 				id_is.close();
