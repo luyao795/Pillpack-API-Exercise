@@ -35,7 +35,10 @@ public class Main
 
 		// A map to store info we have searched in the medication list before to save
 		// time for further search
+		// Map<med_id, isGeneric>
 		Map<String, Boolean> med_generic_map = new HashMap<String, Boolean>();
+		// Map<rxcui, rxcui_generic_sub>
+		Map<String, String> med_rxcui_map = new HashMap<String, String>();
 
 		// Handle each object inside JSON array
 		for (int i = 0; i < pre_size; i++)
@@ -83,40 +86,58 @@ public class Main
 			// the same rxcui number that is generic
 			if (!isGeneric)
 			{
-				// Establish connection to all medications that have the same rxcui number
-				String rxcui_link = "http://api-sandbox.pillpack.com/medications?rxcui=" + rxcui;
-				URL rxcui_url = new URL(rxcui_link);
-				HttpURLConnection rxcui_connection = (HttpURLConnection) rxcui_url.openConnection();
-
-				// Obtain information for all medications with the same rxcui number as the
-				// current one
-				InputStream rxcui_is = rxcui_connection.getInputStream();
-				JSONArray rxcui_array = (JSONArray) parser.parse(new InputStreamReader(rxcui_is, "UTF-8"));
-
-				// Go through each element in the array until find the first generic medication
-				// Or stop at the end of the array with no probable item found
-				for (int j = 0; j < rxcui_array.size(); j++)
+				// If this rxcui value has not been stored in the map
+				// we need to look it up in the database
+				if (!med_rxcui_map.containsKey(rxcui))
 				{
-					JSONObject current = (JSONObject) rxcui_array.get(j);
-					String cur_rxcui = (String) current.get("rxcui");
-					if (cur_rxcui.equals(rxcui))
+					// Establish connection to all medications that have the same rxcui number
+					String rxcui_link = "http://api-sandbox.pillpack.com/medications?rxcui=" + rxcui;
+					URL rxcui_url = new URL(rxcui_link);
+					HttpURLConnection rxcui_connection = (HttpURLConnection) rxcui_url.openConnection();
+
+					// Obtain information for all medications with the same rxcui number as the
+					// current one
+					InputStream rxcui_is = rxcui_connection.getInputStream();
+					JSONArray rxcui_array = (JSONArray) parser.parse(new InputStreamReader(rxcui_is, "UTF-8"));
+
+					// Go through each element in the array until find the first generic medication
+					// Or stop at the end of the array with no probable item found
+					for (int j = 0; j < rxcui_array.size(); j++)
 					{
-						// Add new prescription id and medication id into
-						// a new JSON object and add this object to result array
-						String res_id = (String) current.get("id");
-						JSONObject res_obj = new JSONObject();
-						res_obj.put("prescription_id", pre_id);
-						res_obj.put("medication_id", res_id);
-						result.add(res_obj);
+						JSONObject current = (JSONObject) rxcui_array.get(j);
+						String cur_rxcui = (String) current.get("rxcui");
+						boolean cur_isGeneric = (boolean) current.get("generic");
+						if (cur_rxcui.equals(rxcui) && isGeneric == cur_isGeneric)
+						{
+							// Add new prescription id and medication id into
+							// a new JSON object and add this object to result array
+							String res_id = (String) current.get("id");
+							JSONObject res_obj = new JSONObject();
+							res_obj.put("prescription_id", pre_id);
+							res_obj.put("medication_id", res_id);
+							result.add(res_obj);
+							med_rxcui_map.put(rxcui, res_id);
+							break;
+						}
 					}
+
+					// Close all connections
+					rxcui_is.close();
+					rxcui_connection.disconnect();
 				}
-				
-				// Close all connections
-				rxcui_is.close();
-				rxcui_connection.disconnect();
+				// Otherwise, if this rxcui value is already stored in the database,
+				// we just need to get its corresponding substitute generic med_id
+				// instead of looking for one in the database again
+				else
+				{
+					JSONObject res_obj = new JSONObject();
+					res_obj.put("prescription_id", pre_id);
+					res_obj.put("medication_id", med_rxcui_map.get(rxcui));
+					result.add(res_obj);
+				}
 			}
 		}
-		
+
 		// Close all original prescription connection
 		pre_is.close();
 		pre_connection.disconnect();
@@ -124,11 +145,11 @@ public class Main
 		// Wrap the array around with a JSON object to give it a key (field index)
 		JSONObject wrapper = new JSONObject();
 		wrapper.put("prescription_update", result);
-		
+
 		// Write JSON object to actual JSON file
 		FileWriter fw = new FileWriter("prescription_update.json");
 		fw.write(wrapper.toJSONString());
-		
+
 		// Close FileWriter
 		fw.close();
 	}
