@@ -149,10 +149,10 @@ public class Main
 
 		// Wrap the array around with a JSON object to give it a key (field index)
 		JSONObject wrapper = new JSONObject();
-		wrapper.put("prescription_update", result);
+		wrapper.put("prescription_updates", result);
 
 		// Write JSON object to actual JSON file
-		FileWriter fw = new FileWriter("prescription_update.json");
+		FileWriter fw = new FileWriter("prescription_updates.json");
 		fw.write(wrapper.toJSONString());
 
 		// Close FileWriter
