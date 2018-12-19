@@ -27,7 +27,7 @@ public class Main
 		JSONArray pre_elements = (JSONArray) parser.parse(new InputStreamReader(pre_is, "UTF-8"));
 
 		// This is the final result JSON array that contains only information we need
-		// to output to a file (temporarily)
+		// to output to a file
 		JSONArray result = new JSONArray();
 
 		// Check size of the original JSON array
@@ -37,6 +37,8 @@ public class Main
 		// time for further search
 		// Map<med_id, isGeneric>
 		Map<String, Boolean> med_generic_map = new HashMap<String, Boolean>();
+		// Map<med_id, rxcui>
+		Map<String, String> med_id_rxcui_map = new HashMap<String, String>();
 		// Map<rxcui, rxcui_generic_sub_med_id>
 		Map<String, String> med_rxcui_map = new HashMap<String, String>();
 
@@ -68,10 +70,11 @@ public class Main
 				InputStream id_is = id_connection.getInputStream();
 				JSONObject id_obj = (JSONObject) parser.parse(new InputStreamReader(id_is, "UTF-8"));
 				isGeneric = (boolean) id_obj.get("generic");
-				rxcui = (String) id_obj.get("rxcui");
+				rxcui = id_obj.get("rxcui").toString();
 
-				// Add a reference to the map
+				// Add a reference to the maps
 				med_generic_map.put(med_id, isGeneric);
+				med_id_rxcui_map.put(med_id, rxcui);
 
 				// Close all connections
 				id_is.close();
@@ -79,13 +82,15 @@ public class Main
 			}
 			// Otherwise, just check med_map to see if it's generic
 			else
+			{
 				isGeneric = med_generic_map.get(med_id);
-
+				rxcui = med_id_rxcui_map.get(med_id);
+			}
 			// Key Reminder: NOT ALL medications have rxcui number
 
-			// If this medication is not generic, see if there is a medication with
-			// the same rxcui number that is generic
-			if (!isGeneric)
+			// If this medication is not generic and the rxcui is not empty,
+			// see if there is a medication with the same rxcui number that is generic
+			if ((!isGeneric) && (!rxcui.isEmpty()))
 			{
 				// If this rxcui value has not been stored in the map
 				// we need to look it up in the database
@@ -107,13 +112,13 @@ public class Main
 					for (int j = 0; j < rxcui_array.size(); j++)
 					{
 						JSONObject current = (JSONObject) rxcui_array.get(j);
-						String cur_rxcui = (String) current.get("rxcui");
+						String cur_rxcui = current.get("rxcui").toString();
 						boolean cur_isGeneric = (boolean) current.get("generic");
 						if (cur_rxcui.equals(rxcui) && cur_isGeneric)
 						{
 							// Add new prescription id and medication id into
 							// a new JSON object and add this object to result array
-							String res_id = (String) current.get("id");
+							String res_id = current.get("id").toString();
 							JSONObject res_obj = new JSONObject();
 							res_obj.put("prescription_id", pre_id);
 							res_obj.put("medication_id", res_id);
@@ -122,7 +127,6 @@ public class Main
 							break;
 						}
 					}
-
 					// Close all connections
 					rxcui_is.close();
 					rxcui_connection.disconnect();
@@ -139,7 +143,6 @@ public class Main
 				}
 			}
 		}
-
 		// Close all original prescription connection
 		pre_is.close();
 		pre_connection.disconnect();
