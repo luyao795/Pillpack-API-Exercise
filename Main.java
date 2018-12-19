@@ -37,7 +37,7 @@ public class Main
 		// time for further search
 		// Map<med_id, isGeneric>
 		Map<String, Boolean> med_generic_map = new HashMap<String, Boolean>();
-		// Map<rxcui, rxcui_generic_sub>
+		// Map<rxcui, rxcui_generic_sub_med_id>
 		Map<String, String> med_rxcui_map = new HashMap<String, String>();
 
 		// Handle each object inside JSON array
@@ -109,7 +109,7 @@ public class Main
 						JSONObject current = (JSONObject) rxcui_array.get(j);
 						String cur_rxcui = (String) current.get("rxcui");
 						boolean cur_isGeneric = (boolean) current.get("generic");
-						if (cur_rxcui.equals(rxcui) && isGeneric == cur_isGeneric)
+						if (cur_rxcui.equals(rxcui) && cur_isGeneric)
 						{
 							// Add new prescription id and medication id into
 							// a new JSON object and add this object to result array
